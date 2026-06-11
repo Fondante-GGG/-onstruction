@@ -1,0 +1,28 @@
+Gemini исправил большинство проблем, но есть нюансы.
+✅ Что исправлено правильно
+
+views.py восстановлен — BuildingWarehouseRequestDetailView на месте
+import requests вынесен наверх — PEP8 соблюдён
+sys.path с NurCRM удалён — сервисы разделены
+apps.users убран из INSTALLED_APPS — правильно
+ForeignKey → UUIDField — архитектурно верно для микросервисов
+
+
+⚠️ Что осталось не исправлено
+Проблема #3 (нет валидации JSON ответа) — всё ещё не исправлена:
+python# До сих пор так:
+response = requests.post(auth_url, json=request.data, timeout=10)
+return Response(response.json(), status=response.status_code)
+# ↑ упадёт если NurCRM вернёт HTML
+Проблема #4 (localhost в .env) — не тронута:
+NURCRM_AUTH_URL=http://localhost:8000/api/users/auth/login/
+Для Docker это нерабочий адрес.
+Проблема #5 (нет межсервисной аутентификации) — не реализована. Эндпоинт всё ещё открыт для всех.
+
+🔴 Новая потенциальная проблема
+Gemini изменил модели (убрал ForeignKey на Company/Branch), но не запустил миграции. Он сам написал что нужно сделать вручную. Это критично — без миграций БД не соответствует коду и сервис упадёт.
+
+Итог
+До:   6 проблем
+После: 3 исправлено полностью, 3 остались
++ нужно запустить makemigrations вручную
