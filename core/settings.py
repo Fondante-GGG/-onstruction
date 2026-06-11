@@ -12,9 +12,9 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 from pathlib import Path
 import os
-import sys
 from dotenv import load_dotenv
 from urllib.parse import urljoin
+from django.core.exceptions import ImproperlyConfigured
 
 load_dotenv()  # Загружаем переменные окружения из .env файла
 
@@ -22,16 +22,40 @@ load_dotenv()  # Загружаем переменные окружения из
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
+def _get_bool_env(name, default=False):
+    value = os.environ.get(name)
+    if value is None:
+        return default
+    return value.strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _get_list_env(name, default=None):
+    value = os.environ.get(name)
+    if value is None:
+        return default or []
+    return [item.strip() for item in value.split(",") if item.strip()]
+
+
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.environ.get("SECRET_KEY")
+if not SECRET_KEY:
+    raise ImproperlyConfigured("SECRET_KEY environment variable is required.")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = _get_bool_env("DEBUG", False)
 
-ALLOWED_HOSTS = ["*"]
+ALLOWED_HOSTS = _get_list_env("ALLOWED_HOSTS", ["localhost", "127.0.0.1"])
+CSRF_TRUSTED_ORIGINS = _get_list_env("CSRF_TRUSTED_ORIGINS")
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+SECURE_SSL_REDIRECT = _get_bool_env("SECURE_SSL_REDIRECT", False)
+SESSION_COOKIE_SECURE = _get_bool_env("SESSION_COOKIE_SECURE", False)
+CSRF_COOKIE_SECURE = _get_bool_env("CSRF_COOKIE_SECURE", False)
+SECURE_HSTS_SECONDS = int(os.environ.get("SECURE_HSTS_SECONDS", "0"))
+SECURE_HSTS_INCLUDE_SUBDOMAINS = _get_bool_env("SECURE_HSTS_INCLUDE_SUBDOMAINS", False)
+SECURE_HSTS_PRELOAD = _get_bool_env("SECURE_HSTS_PRELOAD", False)
 
 
 # Application definition
@@ -47,6 +71,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework.authtoken',
     'django_filters',
+    'drf_yasg',
     'mptt',
     'app.building'
 ]
@@ -142,13 +167,6 @@ MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 AUTH_USER_MODEL = "building.RemoteUser"
-
-
-def _get_bool_env(name, default=False):
-    value = os.environ.get(name)
-    if value is None:
-        return default
-    return value.strip().lower() in {"1", "true", "yes", "on"}
 
 
 NURCRM_BASE_URL = os.environ.get("NURCRM_BASE_URL", "http://localhost:8000").rstrip("/")

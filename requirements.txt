@@ -5,6 +5,7 @@ django-mptt==0.17.0
 djangorestframework==3.17.1
 django-filter==25.2
 drf-yasg==1.21.15
+gunicorn==23.0.0
 httpx==0.28.1
 inflection==0.5.1
 packaging==26.2
